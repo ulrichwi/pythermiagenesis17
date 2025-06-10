@@ -1,6 +1,7 @@
 """
 Python wrapper for getting data from Thermie Genesis heatpump using Modbus TCP
 """
+
 import logging
 
 import datetime
@@ -21,6 +22,7 @@ from struct import unpack
 
 _LOGGER = logging.getLogger(__name__)
 
+
 class ThermiaException(Exception):
     def __init__(self, code=None, *args, **kwargs):
         self.message = ""
@@ -31,24 +33,30 @@ class ThermiaException(Exception):
                 self.message = self.code
                 return
 
+
 class ThermiaConnectionError(ThermiaException):
     pass
 
+
 def num_to_bin(value):
-    if(value > -1): return value
+    if value > -1:
+        return value
     return 65536 + value
+
 
 class ThermiaGenesis:  # pylint:disable=too-many-instance-attributes
     """Main class to perform modbus requests to heat pump."""
 
-    def __init__(self, host, port=502, kind='inverter', delay=0.1, max_registers=16):
+    def __init__(self, host, port=502, kind="inverter", delay=0.1, max_registers=16):
         """Initialize."""
 
         self.data = {}
         self._client = ModbusClient(host, port=port, unit_id=1, auto_open=True)
         self.firmware = None
-        if(kind == MODEL_MEGA): self.model = "Mega"
-        else: self.model = "Diplomat Inverter"
+        if kind == MODEL_MEGA:
+            self.model = "Mega"
+        else:
+            self.model = "Diplomat Inverter"
         self._host = host
         self._port = port
         self._kind = kind
@@ -60,18 +68,33 @@ class ThermiaGenesis:  # pylint:disable=too-many-instance-attributes
         ret_value = await self._set_data(register, value)
         self._client.close()
 
-    async def async_update(self, register_types=REG_TYPES, only_registers = None):  # pylint:disable=too-many-branches
+    async def async_update(
+        self, register_types=REG_TYPES, only_registers=None
+    ):  # pylint:disable=too-many-branches
         """Update data from heat pump."""
         if not self._client.is_open():
-            _LOGGER.info("Attempting to open a Modbus TCP connection to %s:%s", self._host, self._port)
+            _LOGGER.info(
+                "Attempting to open a Modbus TCP connection to %s:%s",
+                self._host,
+                self._port,
+            )
             if not self._client.open():
-                raise ThermiaConnectionError(f"Failed to connect to {self._host}:{self._port}")
+                raise ThermiaConnectionError(
+                    f"Failed to connect to {self._host}:{self._port}"
+                )
         use_registers = []
-        if(only_registers != None):
-            #Make sure to sort registers by type and address
-            use_registers = sorted(only_registers, key=(lambda x: f"{REGISTERS[x][KEY_REG_TYPE]}-{REGISTERS[x][KEY_ADDRESS]:03}"))
+        if only_registers != None:
+            # Make sure to sort registers by type and address
+            use_registers = sorted(
+                only_registers,
+                key=(
+                    lambda x: f"{REGISTERS[x][KEY_REG_TYPE]}-{REGISTERS[x][KEY_ADDRESS]:03}"
+                ),
+            )
         else:
-            use_registers = dict(filter(lambda x: x[1][self._kind], REGISTERS.items())).keys()
+            use_registers = dict(
+                filter(lambda x: x[1][self._kind], REGISTERS.items())
+            ).keys()
 
         raw_data = await self._get_data(use_registers)
         self._client.close()
@@ -80,7 +103,7 @@ class ThermiaGenesis:  # pylint:disable=too-many-instance-attributes
             self.data = {}
             return {}
 
-        #_LOGGER.debug("RAW data: %s", raw_data)
+        # _LOGGER.debug("RAW data: %s", raw_data)
         data = {}
         try:
             for i, (name, val) in enumerate(raw_data.items()):
@@ -92,11 +115,10 @@ class ThermiaGenesis:  # pylint:disable=too-many-instance-attributes
             for i, (name, val) in enumerate(self.data.items()):
                 _LOGGER.debug(f"{REGISTERS[name][KEY_ADDRESS]}\t{val}\t{name}")
 
-
         except AttributeError as err:
             _LOGGER.debug("Incomplete data from modbus.")
             _LOGGER.debug(err)
-        except KeyError as err: 
+        except KeyError as err:
             _LOGGER.debug("Incomplete data from modbus.")
             _LOGGER.debug(err)
         except TypeError as err:
@@ -110,7 +132,6 @@ class ThermiaGenesis:  # pylint:disable=too-many-instance-attributes
         """Return True is data is available."""
         return bool(self.data)
 
-
     async def _set_data(self, register, value):
         meta = REGISTERS[register]
         regtype = meta[KEY_REG_TYPE]
@@ -118,33 +139,42 @@ class ThermiaGenesis:  # pylint:disable=too-many-instance-attributes
         scale = meta[KEY_SCALE]
 
         if not self._client.is_open():
-            _LOGGER.info("Attempting to open a Modbus TCP connection to %s:%s", self._host, self._port)
+            _LOGGER.info(
+                "Attempting to open a Modbus TCP connection to %s:%s",
+                self._host,
+                self._port,
+            )
             if not self._client.open():
-                raise ThermiaConnectionError(f"Failed to connect to {self._host}:{self._port}")
+                raise ThermiaConnectionError(
+                    f"Failed to connect to {self._host}:{self._port}"
+                )
 
         await asyncio.sleep(self._delay)
         try:
-            if(regtype == REG_COIL):
-                _LOGGER.debug(f"Set {regtype} register at {address} value {value} ({value})")
+            if regtype == REG_COIL:
+                _LOGGER.debug(
+                    f"Set {regtype} register at {address} value {value} ({value})"
+                )
                 self._client.write_single_coil(address, value)
-            elif(regtype == REG_HOLDING):
+            elif regtype == REG_HOLDING:
                 converted_value = int(value * scale)
-                if(meta[KEY_DATATYPE] == TYPE_INT):
+                if meta[KEY_DATATYPE] == TYPE_INT:
                     converted_value = num_to_bin(converted_value)
-                _LOGGER.debug(f"Set {regtype} register at {address} value {converted_value} ({value}) {scale}")
+                _LOGGER.debug(
+                    f"Set {regtype} register at {address} value {converted_value} ({value}) {scale}"
+                )
                 self._client.write_single_register(address, converted_value)
-            else: 
+            else:
                 raise "This register can not be changed"
         except Exception as e:
-            _LOGGER.error(f'exception: {e}')
+            _LOGGER.error(f"exception: {e}")
             print(traceback.format_exc())
         return value
-
 
     async def _get_data(self, registers):
         """Retreive data from heat pump."""
         raw_data = {}
-        #Split into requests that reads up to self.MAX_REGISTERS within REGISTER_RANGES (register blocks) for the requested registers
+        # Split into requests that reads up to self.MAX_REGISTERS within REGISTER_RANGES (register blocks) for the requested registers
         first_chunk_address = 0
         current_type = None
         chunks = []
@@ -152,72 +182,107 @@ class ThermiaGenesis:  # pylint:disable=too-many-instance-attributes
         for name in registers:
             meta = REGISTERS[name]
 
-            if(name == ATTR_HOLDING_FIXED_SYSTEM_SUPPLY_SET_POINT):
-                #This will give an errror unless coil 42 is True, so skip if we don't know this or if it's false
+            if name == ATTR_HOLDING_FIXED_SYSTEM_SUPPLY_SET_POINT:
+                # This will give an errror unless coil 42 is True, so skip if we don't know this or if it's false
                 enableAttr = ATTR_COIL_ENABLE_FIXED_SYSTEM_SUPPLY_SET_POINT
-                if(enableAttr not in raw_data and enableAttr not in self.data): 
-                    _LOGGER.debug(f"Will not read {name} since we don't know if {ATTR_COIL_ENABLE_FIXED_SYSTEM_SUPPLY_SET_POINT} is set, include this register in the request to read this")
+                if enableAttr not in raw_data and enableAttr not in self.data:
+                    _LOGGER.debug(
+                        f"Will not read {name} since we don't know if {ATTR_COIL_ENABLE_FIXED_SYSTEM_SUPPLY_SET_POINT} is set, include this register in the request to read this"
+                    )
                     continue
-                if(not raw_data[ATTR_COIL_ENABLE_FIXED_SYSTEM_SUPPLY_SET_POINT] and not self.data[ATTR_COIL_ENABLE_FIXED_SYSTEM_SUPPLY_SET_POINT]):
-                    _LOGGER.debug(f"Will not read {name} since {ATTR_COIL_ENABLE_FIXED_SYSTEM_SUPPLY_SET_POINT} is False which disables this register")
+                if (
+                    not raw_data[ATTR_COIL_ENABLE_FIXED_SYSTEM_SUPPLY_SET_POINT]
+                    and not self.data[ATTR_COIL_ENABLE_FIXED_SYSTEM_SUPPLY_SET_POINT]
+                ):
+                    _LOGGER.debug(
+                        f"Will not read {name} since {ATTR_COIL_ENABLE_FIXED_SYSTEM_SUPPLY_SET_POINT} is False which disables this register"
+                    )
                     continue
 
             reg_address = meta[KEY_ADDRESS]
-            if(chunk == None #First iteration
-                    or chunk[KEY_REG_TYPE] != meta[KEY_REG_TYPE] #New register type
-                    or (reg_address - chunk['start']) >= self.MAX_REGISTERS #Exceeds max number of registers per request
-                    or reg_address > chunk['range_end']): #Address belongs to another register block
-                if(chunk != None):
+            if (
+                chunk == None  # First iteration
+                or chunk[KEY_REG_TYPE] != meta[KEY_REG_TYPE]  # New register type
+                or (reg_address - chunk["start"])
+                >= self.MAX_REGISTERS  # Exceeds max number of registers per request
+                or reg_address > chunk["range_end"]
+            ):  # Address belongs to another register block
+                if chunk != None:
                     chunks.append(chunk)
                 start = meta[KEY_ADDRESS]
-                chunk = { KEY_REG_TYPE: meta[KEY_REG_TYPE], 'start': start, 'slots': { name: 0 } }
+                chunk = {
+                    KEY_REG_TYPE: meta[KEY_REG_TYPE],
+                    "start": start,
+                    "slots": {name: 0},
+                }
 
-                if(meta[KEY_DATATYPE] == TYPE_LONG): 
-                    chunk['end'] = start + 1
-                else: 
-                    chunk['end'] = start
+                if (
+                    meta[KEY_DATATYPE] == TYPE_LONG
+                    or meta[KEY_DATATYPE] == TYPE_LONG_LE
+                ):
+                    chunk["end"] = start + 1
+                else:
+                    chunk["end"] = start
 
-                in_range = list(filter(lambda x: x[0] <= start and x[1] >= start, REGISTER_RANGES[self._kind][meta[KEY_REG_TYPE]]))
-                chunk['range_end'] = in_range[0][1]
+                in_range = list(
+                    filter(
+                        lambda x: x[0] <= start and x[1] >= start,
+                        REGISTER_RANGES[self._kind][meta[KEY_REG_TYPE]],
+                    )
+                )
+                chunk["range_end"] = in_range[0][1]
 
             else:
-                chunk['slots'][name] = reg_address - start
-                if(meta[KEY_DATATYPE] == TYPE_LONG):
-                    chunk['end'] = reg_address + 1
+                chunk["slots"][name] = reg_address - start
+                if (
+                    meta[KEY_DATATYPE] == TYPE_LONG
+                    or meta[KEY_DATATYPE] == TYPE_LONG_LE
+                ):
+                    chunk["end"] = reg_address + 1
                 else:
-                    chunk['end'] = reg_address
-        if(chunk != None): chunks.append(chunk)
-        _LOGGER.debug(f"Will make {len(chunks)} requests to read {len(registers)} registers")
+                    chunk["end"] = reg_address
+        if chunk != None:
+            chunks.append(chunk)
+        _LOGGER.debug(
+            f"Will make {len(chunks)} requests to read {len(registers)} registers"
+        )
 
         try:
             for chunk in chunks:
                 await asyncio.sleep(self._delay)
-                start_address = chunk['start']
-                length = chunk['end'] - chunk['start'] + 1
+                start_address = chunk["start"]
+                length = chunk["end"] - chunk["start"] + 1
                 regtype = chunk[KEY_REG_TYPE]
                 _LOGGER.debug(f"Reading {regtype} {start_address} length {length}")
                 read_data = None
-                if(regtype == REG_COIL):
+                if regtype == REG_COIL:
                     read_data = self._client.read_coils(start_address, length)
-                elif(regtype == REG_DISCRETE_INPUT):
+                elif regtype == REG_DISCRETE_INPUT:
                     read_data = self._client.read_discrete_inputs(start_address, length)
-                elif(regtype == REG_INPUT):
+                elif regtype == REG_INPUT:
                     read_data = self._client.read_input_registers(start_address, length)
-                elif(regtype == REG_HOLDING):
-                    read_data = self._client.read_holding_registers(start_address, length)
+                elif regtype == REG_HOLDING:
+                    read_data = self._client.read_holding_registers(
+                        start_address, length
+                    )
                 if read_data:
-                    for i, (name, address) in enumerate(chunk['slots'].items()):
+                    for i, (name, address) in enumerate(chunk["slots"].items()):
                         info = REGISTERS[name]
                         datatype = info[KEY_DATATYPE]
                         scale = info[KEY_SCALE]
                         val = read_data[address]
-                        if(datatype == TYPE_LONG):
-                            regs = read_data[address:(address+2)]
+                        if datatype == TYPE_LONG:
+                            regs = read_data[address : (address + 2)]
                             val = word_list_to_long(regs)[0]
-                        elif(datatype == TYPE_INT):
-                            if(val == 32767): val = 0
-                            if(val > 32767): val = val - 65536
-                        elif(datatype == TYPE_STATUS):
+                        elif datatype == TYPE_LONG_LE:
+                            regs = read_data[address : (address + 2)]
+                            val = word_list_to_long(regs, False)[0]
+                        elif datatype == TYPE_INT:
+                            if val == 32767:
+                                val = 0
+                            if val > 32767:
+                                val = val - 65536
+                        elif datatype == TYPE_STATUS:
                             status_str = "OFF"
                             if val == 1:
                                 status_str = "Manual Operation"
@@ -239,13 +304,17 @@ class ThermiaGenesis:  # pylint:disable=too-many-instance-attributes
                                 status_str = "No demand"
                             val = status_str
 
-                        if(scale != 1): val = val / scale
+                        if scale != 1:
+                            val = val / scale
                         raw_data[name] = val
                 else:
                     if self._client.last_error() > 0:
-                        _LOGGER.error(f'error {self._client.last_error()}')
-                    raise Exception(f"Failed to read {regtype} {start_address} length {length}", self._client.last_error())
-            #for regtype in register_types:
+                        _LOGGER.error(f"error {self._client.last_error()}")
+                    raise Exception(
+                        f"Failed to read {regtype} {start_address} length {length}",
+                        self._client.last_error(),
+                    )
+            # for regtype in register_types:
             #    last_chunk_address = 0
             #    values = []
             #    for chunk in REGISTER_RANGES[self._kind][regtype]:
@@ -274,7 +343,7 @@ class ThermiaGenesis:  # pylint:disable=too-many-instance-attributes
             #        last_chunk_address = chunk[1]
             #    raw_data[regtype] = values
         except Exception as e:
-            _LOGGER.error(f'exception: {e}')
+            _LOGGER.error(f"exception: {e}")
             print(traceback.format_exc())
 
         return raw_data

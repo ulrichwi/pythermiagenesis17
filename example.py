@@ -13,7 +13,8 @@ from pythermiagenesis.const import (
         )
 
 # heatpum IP address/hostname
-HOST = "10.0.20.8"
+HOST = "192.168.1.48"
+# HOST = "10.0.20.8"
 PORT = 502
 logging.basicConfig(level=logging.DEBUG)
 #logging.basicConfig(level=logging.INFO)
