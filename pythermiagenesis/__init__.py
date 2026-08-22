@@ -1,4 +1,4 @@
-"""
+﻿"""
 Python wrapper for getting data from Thermie Genesis heatpump using Modbus TCP
 """
 
@@ -111,8 +111,8 @@ class ThermiaGenesis:  # pylint:disable=too-many-instance-attributes
                 data[name] = val
 
             version_attrs = (ATTR_INPUT_CONTROL_SOFTWARE_VERSION_MAJOR, ATTR_INPUT_CONTROL_SOFTWARE_VERSION_MINOR, ATTR_INPUT_CONTROL_SOFTWARE_VERSION_MICRO) if self._kind in GENESIS_17_MODELS else (ATTR_INPUT_SOFTWARE_VERSION_MAJOR, ATTR_INPUT_SOFTWARE_VERSION_MINOR, ATTR_INPUT_SOFTWARE_VERSION_MICRO)
-            if all(attr in self.data for attr in version_attrs):
-                self.firmware = '.'.join(str(self.data[attr]) for attr in version_attrs)
+            if all(attr in data for attr in version_attrs):
+                self.firmware = '.'.join(str(data[attr]) for attr in version_attrs)
 
             _LOGGER.debug("------------- REGISTERS ----------------------")
             for i, (name, val) in enumerate(self.data.items()):
@@ -350,3 +350,4 @@ class ThermiaGenesis:  # pylint:disable=too-many-instance-attributes
             print(traceback.format_exc())
 
         return raw_data
+
