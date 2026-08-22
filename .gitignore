@@ -128,3 +128,6 @@ dmypy.json
 # Pyre type checker
 .pyre/
 .direnv
+
+# Private local heat-pump configuration
+config_local.py
