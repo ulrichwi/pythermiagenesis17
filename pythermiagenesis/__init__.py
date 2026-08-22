@@ -47,16 +47,17 @@ def num_to_bin(value):
 class ThermiaGenesis:  # pylint:disable=too-many-instance-attributes
     """Main class to perform modbus requests to heat pump."""
 
-    def __init__(self, host, port=502, kind="inverter", delay=0.1, max_registers=16):
+    def __init__(self, host, port=502, kind="inverter", delay=0.1, max_registers=16, unit_id=1):
         """Initialize."""
 
         self.data = {}
-        self._client = ModbusClient(host, port=port, unit_id=1, auto_open=True)
+        normalized_kind = MODEL_ALIASES.get(str(kind).strip().lower(), kind)
+        if normalized_kind not in REGISTER_RANGES:
+            raise ValueError(f'Unsupported heat pump model: {kind}')
+        kind = normalized_kind
+        self._client = ModbusClient(host, port=port, unit_id=unit_id, auto_open=True)
         self.firmware = None
-        if kind == MODEL_MEGA:
-            self.model = "Mega"
-        else:
-            self.model = "Diplomat Inverter"
+        self.model = MODEL_NAMES[kind]
         self._host = host
         self._port = port
         self._kind = kind
@@ -109,7 +110,9 @@ class ThermiaGenesis:  # pylint:disable=too-many-instance-attributes
             for i, (name, val) in enumerate(raw_data.items()):
                 data[name] = val
 
-            self.firmware = f"{self.data[ATTR_INPUT_SOFTWARE_VERSION_MAJOR]}.{self.data[ATTR_INPUT_SOFTWARE_VERSION_MINOR]}.{self.data[ATTR_INPUT_SOFTWARE_VERSION_MICRO]}"
+            version_attrs = (ATTR_INPUT_CONTROL_SOFTWARE_VERSION_MAJOR, ATTR_INPUT_CONTROL_SOFTWARE_VERSION_MINOR, ATTR_INPUT_CONTROL_SOFTWARE_VERSION_MICRO) if self._kind in GENESIS_17_MODELS else (ATTR_INPUT_SOFTWARE_VERSION_MAJOR, ATTR_INPUT_SOFTWARE_VERSION_MINOR, ATTR_INPUT_SOFTWARE_VERSION_MICRO)
+            if all(attr in self.data for attr in version_attrs):
+                self.firmware = '.'.join(str(self.data[attr]) for attr in version_attrs)
 
             _LOGGER.debug("------------- REGISTERS ----------------------")
             for i, (name, val) in enumerate(self.data.items()):
