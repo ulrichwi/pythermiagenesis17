@@ -1,4 +1,4 @@
-# pythermiagenesis
+# pythermiagenesis 
 
 A Python library for Thermia Diplomat Inverter, Mega, and Calibra RXT heat pumps. The Calibra RXT profile also supports the equivalent Stiebel-Eltron WPE-I 07.1.
 
@@ -6,10 +6,14 @@ This library communicates with the device using Modbus TCP.
 Set BMC to Modbus TCP on your heat pump to enable communication through this library.
 
 ## documentation
+Supports Thermia Modbus protocol up to V17.1
 
 Thermia Modbus TCP documentation: 
 - V10:  <https://www.tcmadmin.thermia.se/docroot/dokumentbank/Modbus%20protocol%20for%20Genesis%20platform%2010.pdf>
 - V17.1:  <https://www.geotherma.be/wp-content/uploads/2026/02/Modbus-protocol-for-Genesis-platform-17.1-MEGA.pdf>
+
+Stiebel Eltron Modbus TCP documentation:
+- V2025/11: https://www.stiebel-eltron.at/toolbox/content/docs/anleitungen/bedienung/WPE_07.1_17.1_Plus_HW/372257-47978-0071_Modbus_WPE-I_07.1-17.1_Plus_de.pdf
 
 ## notes
 
