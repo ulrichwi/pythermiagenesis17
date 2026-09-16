@@ -4,10 +4,10 @@ from setuptools import setup
 
 setup(
     name="pythermiagenesis",
-    version="0.2.0",
-    author="Johan Isaksson",
-    author_email="johan@generatorhallen.se",
-    description="Python wrapper for getting data from Thermia Mega, Inverter and Calibra RXT heat pumps \
+    version="0.3.0",
+    author="Ulrich Wirleitner",
+    author_email="ulrik@gmx.at",
+    description="Python wrapper for getting data from Thermia Mega, Inverter, Calibra RXT and Stiebel Eltron WPE-I 07.1 heat pumps \
         via Modbus TCP.",
     include_package_data=True,
     url="https://github.com/ulrichwi/pythermiagenesis17",
