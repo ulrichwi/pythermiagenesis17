@@ -1,4 +1,4 @@
-# pythermiagenesis 
+# pythermiagenesis17 
 
 A Python library for Thermia Diplomat Inverter, Mega, and Calibra RXT heat pumps. The Calibra RXT profile also supports the equivalent Stiebel-Eltron WPE-I 07.1.
 
