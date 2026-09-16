@@ -3,7 +3,7 @@ from setuptools import setup
 
 
 setup(
-    name="pythermiagenesis",
+    name="pythermiagenesis17",
     version="0.3.0",
     author="Ulrich Wirleitner",
     author_email="ulrik@gmx.at",
