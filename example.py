@@ -13,7 +13,7 @@ from pythermiagenesis.const import (
         )
 
 # heatpum IP address/hostname
-HOST = "192.168.1.48"
+HOST = "192.168.1.111"
 # HOST = "10.0.20.8"
 PORT = 502
 logging.basicConfig(level=logging.DEBUG)
@@ -25,8 +25,11 @@ async def main():
     port = argv[2] if len(argv) > 2 else PORT
     kind = argv[3] if len(argv) > 3 else "inverter"
 
-    # argument kind: inverter - for Diplomat Inverter
-    #                mega     - for Mega
+    # argument kind: 
+    #    inverter           - for Diplomat Inverter
+    #    mega               - for Mega
+    #    calibra_rxt        - for Thermia Calibra RXT
+    #    stiebel_wpe_i_07_1 - for Stiebel-Eltron WPE-I 07.1
     thermia = ThermiaGenesis(host, port=port, kind=kind, delay=0.15)
     try:
         #Get all register types
